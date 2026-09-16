@@ -1,6 +1,6 @@
 # V5Example - VEX V5 Brain Integration
 
-This directory contains a VEX V5 C++ project that demonstrates how to integrate the V5 Brain with the Jetson Nano or Raspberry Pi 5 vision processing system. The example project showcases how to receive detection data from the vision system, use GPS positioning, and implement autonomous routines for the 2025-26 VEX AI Competition (PushBack).
+This directory contains a VEX V5 C++ project that demonstrates how to integrate the V5 Brain with the Jetson Nano or Raspberry Pi 5 vision processing system. The example project showcases how to receive detection data from the vision system, use GPS positioning, and implement autonomous routines for the 2026-27 VEX AI Competition (Override).
 
 ## Overview
 
@@ -15,13 +15,15 @@ The `ai_demo` project is a complete VEX V5 C++ application that:
 
 ### Example Behavior
 
-This demo is designed for the 2025-26 PushBack HeroBot with a ball pre-loaded. When the program runs, the robot will:
+This demo is written against a placeholder Override robot with a game element pre-loaded. When the program runs, the robot will:
 
-1. **Search for Blue Ball**: Continuously polls for detection data and searches for blue balls
-2. **Navigate to Ball**: Uses GPS positioning and helper functions to drive to the detected ball
-3. **Intake Ball**: Activates intake and belt systems to collect the ball
-4. **Navigate to Goal**: Calculates which of the 4 ends of the long goals is closest
-5. **Score Ball**: Drives to the goal, extends to score, then backs away
+1. **Search for a Cup**: Continuously polls for detection data and searches for cups
+2. **Navigate to Cup**: Uses GPS positioning and helper functions to drive to the detected cup
+3. **Intake Cup**: Activates intake and belt systems to collect it
+4. **Navigate to Goal**: Calculates which of the closest corner Alliance Goals to drive to
+5. **Score**: Drives to the goal, extends to score, then backs away
+
+> This routine is a minimal illustration of the communication protocol, not a competitive Override strategy - `goToGoal()`'s coordinates are placeholders (see the comment above it in `ai_functions.cpp`) and should be re-measured against the official Override field drawing, and a real strategy should account for the game's other goal types (Short neutral Goals, the Tall neutral Goal, and Toggles).
 
 ## Prerequisites
 
@@ -112,7 +114,7 @@ The project is organized into several key files:
 
 #### `ai_functions.h`
 - **Purpose**: Function declarations for navigation and object interaction
-- **Enums**: `OBJECT` (BallBlue, BallRed)
+- **Enums**: `OBJECT` (Blue, BlueYellow, Cup, Red, RedBlue, RedYellow, Yellow, YellowYellow)
 - **Functions**: All helper functions for robot movement and object interaction
 
 #### `ai_robot_link.h`
@@ -187,7 +189,7 @@ For multi-robot setups:
 
 Before compiling, ensure:
 
-1. **Vision System Running**: Jetson/Raspberry Pi is running `pushback.py`
+1. **Vision System Running**: Jetson/Raspberry Pi is running `override.py`
 2. **USB Connected**: V5 Brain connected to Jetson/Raspberry Pi via USB
 3. **GPS Connected**: GPS sensor connected to V5 Brain
 4. **Ports Correct**: Motor and sensor ports match your robot configuration
@@ -247,7 +249,7 @@ typedef struct {
 #### DETECTION_OBJECT Structure
 ```cpp
 typedef struct {
-    int32_t classID;               // 0 = BallBlue, 1 = BallRed
+    int32_t classID;               // see Detection Class IDs below (must match JetsonExample/labels.txt order)
     float probability;              // Confidence (0.0 - 1.0)
     float depth;                    // Distance in meters
     IMAGE_DETECTION screenLocation; // 2D screen coordinates
@@ -299,10 +301,10 @@ void auto_Isolation(void) {
   GPS.calibrate();
   waitUntil(!(GPS.isCalibrating()));
 
-  // Search for and drive to blue ball
-  goToObject(OBJECT::BallBlue);
+  // Search for and drive to a cup
+  goToObject(OBJECT::Cup);
   
-  // Intake ball (3 rotations while driving forward)
+  // Intake the cup (3 rotations while driving forward)
   runIntake(directionType::fwd, 3, true);
   
   // Navigate to nearest goal
@@ -311,7 +313,7 @@ void auto_Isolation(void) {
   // Drive into goal
   Drivetrain.driveFor(-115, distanceUnits::cm);
   
-  // Score ball
+  // Score
   Belt.setVelocity(70, pct);
   runIntake(directionType::fwd, 5, false);
   
@@ -322,9 +324,9 @@ void auto_Isolation(void) {
 
 **Behavior Breakdown**:
 1. **GPS Calibration**: Ensures accurate positioning
-2. **Object Search**: `goToObject()` finds closest blue ball and drives to it
-3. **Ball Intake**: Intake and belt run while robot drives forward
-4. **Goal Navigation**: `goToGoal()` calculates closest goal end and navigates
+2. **Object Search**: `goToObject()` finds closest cup and drives to it
+3. **Intake**: Intake and belt run while robot drives forward
+4. **Goal Navigation**: `goToGoal()` calculates closest corner goal and navigates
 5. **Scoring**: Robot extends into goal, activates belt to score
 6. **Retreat**: Robot backs away from goal
 
@@ -340,11 +342,11 @@ void auto_Isolation(void) {
 
 #### Object Interaction Functions
 
-- **`findTarget(type)`**: Finds closest detected object of specified type (BallBlue or BallRed)
+- **`findTarget(type)`**: Finds closest detected object of the specified `OBJECT` type
 - **`goToObject(type)`**: Drives to closest detected object, searches if not found
 - **`runIntake(dir)`**: Runs intake and belt motors
 - **`runIntake(dir, rotations, driveForward)`**: Runs intake for specified rotations
-- **`goToGoal()`**: Calculates closest goal end (4 possible positions) and navigates to it
+- **`goToGoal()`**: Calculates closest corner Alliance Goal (placeholder coordinates - see the comment in `ai_functions.cpp`) and navigates to it
 
 ## Troubleshooting
 
@@ -353,7 +355,7 @@ void auto_Isolation(void) {
 **Issue**: Dashboard shows 0 packets, no detections
 
 **Solutions**:
-- Verify Jetson/Raspberry Pi is running (`pushback.py` running)
+- Verify Jetson/Raspberry Pi is running (`override.py` running)
 - Check USB connection between V5 Brain and Jetson/Raspberry Pi
 - Verify serial port permissions on Jetson/Raspberry Pi
 - Check for compilation errors in vision system
@@ -413,7 +415,7 @@ void auto_Isolation(void) {
 - Verify vision system is detecting objects (check web dashboard)
 - Check HSV color correction is tuned for lighting conditions
 - Ensure camera is mounted correctly
-- Verify object classes match (0 = BallBlue, 1 = BallRed)
+- Verify object classes match the Detection Class IDs table below
 - Check detection confidence thresholds (may need to filter low-confidence detections)
 
 ## Key Configuration Notes
@@ -438,10 +440,16 @@ gps GPS = gps(PORT9, x_offset, y_offset, distanceUnits::mm, heading_offset);
 
 ### Detection Class IDs
 
-- **0**: BallBlue
-- **1**: BallRed
+- **0**: Blue
+- **1**: BlueYellow
+- **2**: Cup
+- **3**: Red
+- **4**: RedBlue
+- **5**: RedYellow
+- **6**: Yellow
+- **7**: YellowYellow
 
-These match the classes defined in `JetsonExample/labels.txt`.
+These must match the classes (and order) defined in `JetsonExample/labels.txt`, which in turn must match the `names:` list in the trained model's Roboflow `data.yaml` export - if any of the three drift out of sync, classIDs silently point at the wrong object.
 
 ### Coordinate System
 

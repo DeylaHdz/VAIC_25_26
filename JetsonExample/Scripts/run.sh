@@ -5,7 +5,7 @@ SCRIPT_DIR="$(dirname "$0")"
 
 # Get the directory of the Python program (one level above the script)
 PYTHON_DIR="$(realpath "$SCRIPT_DIR/..")"
-PYTHON_PROGRAM="$PYTHON_DIR/pushback.py"
+PYTHON_PROGRAM="$PYTHON_DIR/override.py"
 
 # Navigate to the desired directory
 cd "$SCRIPT_DIR/../../JetsonWebDashboard/vexai-web-dashboard-react"

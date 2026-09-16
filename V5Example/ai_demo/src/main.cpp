@@ -20,9 +20,9 @@ motor leftDrive = motor(PORT1, ratio18_1, false);
 motor rightDrive = motor(PORT2, ratio18_1, true);
 gps GPS = gps(PORT9, 0, -165, distanceUnits::mm, 180);
 smartdrive Drivetrain = smartdrive(leftDrive, rightDrive, GPS, 319.19, 320, 40, mm, 1);
-// Intake motor for taking in balls for belt to move upward
+// Intake motor for taking in game elements (Cups/Pins) for belt to move upward
 motor Intake = motor(PORT4, ratio18_1, true);
-// Belt motor for moving balls taken in by intake motor
+// Belt motor for moving game elements taken in by intake motor
 motor Belt = motor(PORT3, ratio18_1, false);
 
 
@@ -68,7 +68,7 @@ void auto_Isolation(void) {
   // Optional wait to allow for calibration
   waitUntil(!(GPS.isCalibrating()));
 
-  goToObject(OBJECT::BallBlue);
+  goToObject(OBJECT::Cup);
   runIntake(directionType::fwd, 3, true);
   goToGoal();
   Drivetrain.driveFor(-115, distanceUnits::cm);

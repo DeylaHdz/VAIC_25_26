@@ -215,8 +215,8 @@ class Rendering:
     def display_output(self, output):
         # Display the output image in a window
         # Handle window closing with 'q' or 'esc' keys
-        cv2.namedWindow("VEX HighStakes", cv2.WINDOW_AUTOSIZE)
-        cv2.imshow("VEX HighStakes", output)
+        cv2.namedWindow("VEX Override", cv2.WINDOW_AUTOSIZE)
+        cv2.imshow("VEX Override", output)
         key = cv2.waitKey(1)
         if key & 0xFF == ord("q") or key == 27:
             cv2.destroyAllWindows()

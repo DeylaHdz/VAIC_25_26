@@ -1,2 +1,8 @@
-BallBlue
-BallRed
+blue
+blue_yellow
+cup
+red
+red_blue
+red_yellow
+yellow
+yellow_yellow

@@ -1,15 +1,46 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Layer, Image } from "react-konva";
 import { config } from "../../util/config";
 import { useAppSelector } from "../../state/hooks";
 import { Element } from "../../lib/types";
 import { v4 as uuidv4 } from "uuid";
-import useImage from "use-image";
 
 interface DetectionLayerProps {
   fieldWidth: number;
   fieldHeight: number;
 }
+
+// All Override element classes, in Element enum order (see lib/types.ts / JetsonExample/labels.txt).
+const ELEMENT_CLASSES = Object.values(Element).filter(
+  (value) => typeof value === "number"
+) as Element[];
+
+/**
+ * Loads one image per detectable element class up front. Kept as a single hook (rather
+ * than calling an image-loading hook once per class in a loop) so the number of hooks
+ * called stays constant across renders.
+ */
+const useElementImages = (): Partial<Record<Element, HTMLImageElement>> => {
+  const [loaded, setLoaded] = useState<Partial<Record<Element, HTMLImageElement>>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    ELEMENT_CLASSES.forEach((elementClass) => {
+      const img = new window.Image();
+      img.src = config.elements.textures[elementClass];
+      img.onload = () => {
+        if (!cancelled) {
+          setLoaded((prev) => ({ ...prev, [elementClass]: img }));
+        }
+      };
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return loaded;
+};
 
 /**
  * Displays elements on the field detected by the robot
@@ -20,19 +51,9 @@ interface DetectionLayerProps {
 const DetectionLayer = ({ fieldWidth, fieldHeight }: DetectionLayerProps) => {
   const detections = useAppSelector((state) => state.data.response.detections);
   const scale = useAppSelector((state) => state.app.scale);
-  const [redPickup] = useImage(config.elements.textures[Element.BallRed]);
-  const [bluePickup] = useImage(config.elements.textures[Element.BallBlue]);
+  const elementImages = useElementImages();
 
-  const getImage = (detectionClass: number) => {
-    switch (detectionClass) {
-      case Element.BallRed:
-        return redPickup;
-      case Element.BallBlue:
-        return bluePickup;
-      default:
-        break;
-    }
-  };
+  const getImage = (detectionClass: number) => elementImages[detectionClass as Element];
 
   return (
     <Layer>

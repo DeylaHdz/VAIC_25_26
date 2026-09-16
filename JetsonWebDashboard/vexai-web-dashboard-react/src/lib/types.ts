@@ -1,6 +1,13 @@
+// Must stay in the same order as JetsonExample/labels.txt.
 export enum Element {
-  BallBlue = 0,
-  BallRed = 1,
+  Blue = 0,
+  BlueYellow = 1,
+  Cup = 2,
+  Red = 3,
+  RedBlue = 4,
+  RedYellow = 5,
+  Yellow = 6,
+  YellowYellow = 7,
 }
 
 export enum Direction {

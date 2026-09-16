@@ -172,6 +172,10 @@ void stopIntake() {
     Belt.stop();
 }
 
+// Drives to the nearest corner-quadrant Alliance Goal. Override has more goal
+// types than this (2 Alliance Goals per quadrant, 4 Short neutral Goals, 1 Tall
+// neutral Goal at midfield) - these coordinates are a placeholder for "closest
+// corner" and should be re-measured against the official Override field drawing.
 void goToGoal() {
     int closestGoalX = 0;
     int closestGoalY = 0;

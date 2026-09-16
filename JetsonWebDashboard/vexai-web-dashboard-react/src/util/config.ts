@@ -75,29 +75,48 @@ export const config = {
     },
   },
   elements: {
+    // 2026-27 Override game elements. Pins are ~40mm (0.04m) diameter, 6.5" (0.1651m) tall;
+    // Cups are ~3.15" (0.08m) diameter, 6.5" (0.1651m) tall. Using diameter for the top-down
+    // field view size, same convention the previous Push Back ball sizes used.
     textures: {
-      [Element.BallBlue]: images.elements.blueBall,
-      [Element.BallRed]: images.elements.redBall,
+      [Element.Blue]: images.elements.blue,
+      [Element.BlueYellow]: images.elements.blueYellow,
+      [Element.Cup]: images.elements.cup,
+      [Element.Red]: images.elements.red,
+      [Element.RedBlue]: images.elements.redBlue,
+      [Element.RedYellow]: images.elements.redYellow,
+      [Element.Yellow]: images.elements.yellow,
+      [Element.YellowYellow]: images.elements.yellowYellow,
     },
     size: {
-      [Element.BallBlue]: {
-        height: 0.08255,
-        width: 0.08255,
-        scale: 2.0,
-      },
-      [Element.BallRed]: {
-        height: 0.08255,
-        width: 0.08255,
-        scale: 2.0
-      },
+      [Element.Blue]: { height: 0.04, width: 0.04, scale: 2.0 },
+      [Element.BlueYellow]: { height: 0.04, width: 0.04, scale: 2.0 },
+      [Element.Cup]: { height: 0.08, width: 0.08, scale: 2.0 },
+      [Element.Red]: { height: 0.04, width: 0.04, scale: 2.0 },
+      [Element.RedBlue]: { height: 0.04, width: 0.04, scale: 2.0 },
+      [Element.RedYellow]: { height: 0.04, width: 0.04, scale: 2.0 },
+      [Element.Yellow]: { height: 0.04, width: 0.04, scale: 2.0 },
+      [Element.YellowYellow]: { height: 0.04, width: 0.04, scale: 2.0 },
     },
     borderColors: {
-      [Element.BallRed]: "rgba(255, 0, 0, .8)",
-      [Element.BallBlue]: "rgba(0, 0, 255, .8)",
+      [Element.Blue]: "rgba(0, 119, 200, .8)",
+      [Element.BlueYellow]: "rgba(0, 119, 200, .8)",
+      [Element.Cup]: "rgba(150, 150, 150, .8)",
+      [Element.Red]: "rgba(210, 38, 48, .8)",
+      [Element.RedBlue]: "rgba(210, 38, 48, .8)",
+      [Element.RedYellow]: "rgba(210, 38, 48, .8)",
+      [Element.Yellow]: "rgba(255, 212, 0, .8)",
+      [Element.YellowYellow]: "rgba(255, 212, 0, .8)",
     },
     backgroundColors: {
-      [Element.BallRed]: "rgba(255, 0, 0, .3)",
-      [Element.BallBlue]: "rgba(0, 0, 255, .3)",
+      [Element.Blue]: "rgba(0, 119, 200, .3)",
+      [Element.BlueYellow]: "rgba(0, 119, 200, .3)",
+      [Element.Cup]: "rgba(150, 150, 150, .3)",
+      [Element.Red]: "rgba(210, 38, 48, .3)",
+      [Element.RedBlue]: "rgba(210, 38, 48, .3)",
+      [Element.RedYellow]: "rgba(210, 38, 48, .3)",
+      [Element.Yellow]: "rgba(255, 212, 0, .3)",
+      [Element.YellowYellow]: "rgba(255, 212, 0, .3)",
     },
     label: {
       textColors: {
@@ -105,8 +124,14 @@ export const config = {
         black: "rgba(0, 0, 0, 1)",
       },
       text: {
-        [Element.BallRed]: "Red Ball",
-        [Element.BallBlue]: "Blue Ball",
+        [Element.Blue]: "Blue Pin",
+        [Element.BlueYellow]: "Blue/Yellow Pin",
+        [Element.Cup]: "Cup",
+        [Element.Red]: "Red Pin",
+        [Element.RedBlue]: "Red/Blue Pin",
+        [Element.RedYellow]: "Red/Yellow Pin",
+        [Element.Yellow]: "Yellow Pin",
+        [Element.YellowYellow]: "Yellow/Yellow Pin",
       },
     },
   },

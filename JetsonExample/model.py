@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 from PIL import ImageDraw
-from data_processing import PreprocessYOLO, PostprocessYOLO, ALL_CATEGORIES
+from data_processing import PreprocessYOLO, PostprocessYOLO, ALL_CATEGORIES, CATEGORY_NUM
 from model_backend import CUDABackend, CoralBackend, USE_CUDA, USE_CORAL
 
 
@@ -23,40 +23,32 @@ class Model:
     def inference(self, inputImage):
         # Perform inference on the given image and return the bounding boxes, scores, and classes of detected objects.
 
-        # Define input resolution and create preprocessor
-        input_resolution_yolov3_HW = (320, 320)
-        preprocessor = PreprocessYOLO(input_resolution_yolov3_HW)
+        # Define input resolution and create preprocessor.
+        # 640x640 matches the resolution the YOLOv11 model is trained/exported at in Roboflow -
+        # update this if you export at a different size.
+        input_resolution_HW = (640, 640)
+        preprocessor = PreprocessYOLO(input_resolution_HW, channels_first=USE_CUDA)
 
         # Process the image and get original shape
         image_raw, image = preprocessor.process(inputImage, self.backend.dtype)
         shape_orig_WH = image_raw.size
 
-        # Define output shapes for post-processing
-        output_shapes = [(1, 10, 10, 21), (1, 20, 20, 21)]
-
         # Set the input and perform inference
         outputs = self.backend.inference(image)
 
-        # Sort tensors from smallest to largest
-        outputs = sorted(outputs, key=lambda o: o.size)
-
-        # Reshape the outputs for post-processing
-        outputs = [output.reshape(shape) for output, shape in zip(outputs, output_shapes)]
+        # YOLOv11's ONNX export produces a single output tensor of shape
+        # (1, 4 + CATEGORY_NUM, num_predictions) - boxes already decoded, no anchors/grid
+        # math needed. Reshape defensively using the class count rather than a hardcoded
+        # num_predictions, since that depends on input resolution.
+        channels = 4 + CATEGORY_NUM
+        num_predictions = outputs[0].size // channels
+        outputs = [outputs[0].reshape((1, channels, num_predictions))]
 
         # Define arguments for post-processing
         postprocessor_args = {
-            "yolo_masks": [(3, 4, 5), (0, 1, 2)],
-            "yolo_anchors": [
-            (10, 14),
-            (23, 27),
-            (37, 58),
-            (81, 82),
-            (135, 169),
-            (344, 319),
-            ],
-            "obj_threshold": [0.5, 0.5],  # Different thresholds for each class label (Green, Red, Blue)
+            "conf_threshold": 0.5,
             "nms_threshold": 0.5,
-            "yolo_input_resolution": input_resolution_yolov3_HW,
+            "yolo_input_resolution": input_resolution_HW,
         }
 
         # Perform post-processing

@@ -82,8 +82,11 @@ class CUDABackend(ModelBackend):
 
     def __init__(self):
         current_folder_path = os.path.dirname(os.path.abspath(__file__))
-        onnx_file_path = os.path.join(current_folder_path, "models/pushback_lite.onnx")  # If you change the onnx file to your own model, adjust the file name here
-        engine_file_path = os.path.join(current_folder_path, "models/pushback_lite.trt")  # This should match the .onnx file name
+        # Drop your Roboflow-exported YOLOv11 ONNX weights in models/override_lite.onnx.
+        # models/pushback_lite.onnx (if still present) is the legacy 2025-26 Push Back model
+        # (2 classes) and is NOT compatible with labels.txt - do not point this at it.
+        onnx_file_path = os.path.join(current_folder_path, "models/override_lite.onnx")  # If you change the onnx file to your own model, adjust the file name here
+        engine_file_path = os.path.join(current_folder_path, "models/override_lite.trt")  # This should match the .onnx file name
 
         # Get the TensorRT engine
         self.engine = CUDABackend.get_engine(onnx_file_path, engine_file_path)
@@ -109,7 +112,10 @@ class CoralBackend(ModelBackend):
     
     def __init__(self):
         current_folder_path = os.path.dirname(os.path.abspath(__file__))
-        tflite_file_path = os.path.join(current_folder_path, "models/pushback_lite.tflite")
+        # NOTE: see the matching comment in CUDABackend. A Coral/TFLite export is a separate
+        # step from the ONNX/TensorRT one (different quantization) - not covered by the
+        # Jetson Orin Nano YOLOv11 integration described there.
+        tflite_file_path = os.path.join(current_folder_path, "models/override_lite.tflite")
 
         devices = list_edge_tpus()
         if len(devices) == 0:

@@ -5,6 +5,11 @@
 
 /env
 
+# Local YOLOv11 training environment/output (not part of the repo)
+/.trainenv/
+/.trainruns/
+/.trainruns_log.txt
+
 # User-specific files
 *.rsuser
 *.suo

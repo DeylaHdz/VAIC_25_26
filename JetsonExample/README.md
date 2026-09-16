@@ -8,7 +8,7 @@ The JetsonExample system orchestrates multiple components to create a complete v
 
 1. **Camera Capture**: Intel RealSense D435 depth camera captures synchronized RGB and depth frames
 2. **Image Processing**: Color correction and preprocessing for AI inference
-3. **AI Inference**: YOLOv3-based neural network detects game objects (red and blue balls)
+3. **AI Inference**: YOLOv11-based neural network detects Override game elements (Cups and color-coded Pins)
 4. **3D Mapping**: Converts 2D detections to 3D field coordinates using depth data
 5. **Position Tracking**: Integrates V5 GPS sensor data for robot localization
 6. **Data Communication**: Sends detection data to V5 Brain via serial and web dashboard via WebSocket
@@ -28,7 +28,7 @@ If you built from source instead of using a pre-built image, ensure all dependen
 
 ### Automatic Start (Pre-built Images)
 
-If you're using a pre-built SD card image, the system automatically runs `pushback.py` as a systemd service (`vexai`) on boot.
+If you're using a pre-built SD card image, the system automatically runs `override.py` as a systemd service (`vexai`) on boot.
 
 **Service Management Commands:**
 - Check status: `sudo systemctl status vexai`
@@ -51,11 +51,11 @@ To run the system manually for development or debugging:
    ```
 
 2. **Ensure all required files are present**:
-   The directory should contain: `pushback.py`, `model.py`, `model_backend.py`, `data_processing.py`, `common.py`, `V5Comm.py`, `V5Position.py`, `V5MapPosition.py`, `V5Web.py`, `filter.py`, `labels.txt`, and the `models/` directory with model files.
+   The directory should contain: `override.py`, `model.py`, `model_backend.py`, `data_processing.py`, `common.py`, `V5Comm.py`, `V5Position.py`, `V5MapPosition.py`, `V5Web.py`, `filter.py`, `labels.txt`, and the `models/` directory with model files.
 
 3. **Run the main application**:
    ```bash
-   python3 pushback.py
+   python3 override.py
    ```
 
 The system will start initializing components, and once ready, begin processing camera frames and detecting objects.
@@ -64,7 +64,7 @@ The system will start initializing components, and once ready, begin processing 
 
 The application is organized into several key components, each with a specific responsibility:
 
-### Main Application (`pushback.py`)
+### Main Application (`override.py`)
 
 The entry point of the system. Contains four main classes:
 
@@ -106,22 +106,23 @@ The entry point of the system. Contains four main classes:
 
 #### `Model` Class (`model.py`)
 - **Purpose**: High-level interface for AI inference
-- **Neural Network**: Based on YOLOv3 architecture (see [YOLOv3 Paper](https://arxiv.org/pdf/1804.02767.pdf))
-- **Input Resolution**: 320x320 pixels
+- **Neural Network**: YOLOv11 architecture, trained via [Roboflow](https://roboflow.com/) and exported to ONNX
+- **Input Resolution**: 640x640 pixels
 - **Backend Selection**: Automatically detects and uses CUDA (Jetson) or Coral Edge TPU (Raspberry Pi)
 - **Output**: Bounding boxes, class IDs, and confidence scores for detected objects
+- **Status**: `models/pushback_lite.*` (bundled) is the legacy 2025-26 Push Back model and must be replaced with an Override-trained `override_lite.onnx`/`.tflite` - see [Detection Classes](#detection-classes) below
 
 #### `CUDABackend` and `CoralBackend` Classes (`model_backend.py`)
 - **Purpose**: Platform-specific AI inference backends
-- **CUDABackend**: Uses TensorRT for Jetson Nano (loads `pushback_lite.onnx`, generates `.trt` engine)
-- **CoralBackend**: Uses PyCoral for Raspberry Pi 5 (loads `pushback_lite.tflite`)
+- **CUDABackend**: Uses TensorRT for Jetson (loads `override_lite.onnx`, generates `.trt` engine)
+- **CoralBackend**: Uses PyCoral for Raspberry Pi 5 (loads `override_lite.tflite`)
 - **Automatic Detection**: The system automatically selects the appropriate backend based on available hardware
 
 #### `PreprocessYOLO` and `PostprocessYOLO` Classes (`data_processing.py`)
-- **Purpose**: YOLOv3-specific preprocessing and post-processing
-- **Preprocessing**: Resizes input images to 320x320, normalizes pixel values
-- **Post-processing**: Non-maximum suppression (NMS), bounding box decoding, confidence filtering
-- **Source**: Based on NVIDIA's YOLOv3 sample code (`common.py`)
+- **Purpose**: YOLOv11-specific preprocessing and post-processing
+- **Preprocessing**: Resizes input images to 640x640, normalizes pixel values, NCHW layout for the CUDA/TensorRT backend
+- **Post-processing**: Confidence filtering and non-maximum suppression (NMS) on YOLOv11's already-decoded anchor-free output
+- **Note**: This is a from-scratch rewrite of the previous YOLOv3 anchor-box decoder (fixed anchors, 2 grid scales) used by the 2025-26 Push Back model - YOLOv11 does not use anchors
 
 ### V5 Communication (`V5Comm.py`)
 
@@ -190,11 +191,12 @@ Provides HTTP/WebSocket server for the web dashboard.
 ### Supporting Files
 
 - **`filter.py`**: `LiveFilter` class for smoothing position data (moving average filter)
-- **`labels.txt`**: Object class labels (BallBlue, BallRed)
+- **`labels.txt`**: Object class labels (`blue`, `blue_yellow`, `cup`, `red`, `red_blue`, `red_yellow`, `yellow`, `yellow_yellow` - must match the trained model's class order exactly)
 - **`common.py`**: NVIDIA-provided utility functions for TensorRT/CUDA operations
-- **`models/pushback_lite.onnx`**: Neural network model for Jetson (ONNX format)
-- **`models/pushback_lite.tflite`**: Neural network model for Raspberry Pi (TensorFlow Lite format)
-- **`assets/`**: Training images showing the visual range the model was trained on
+- **`models/override_lite.onnx`**: Neural network model for Jetson (ONNX format) - drop your Roboflow YOLOv11 export here
+- **`models/override_lite.tflite`**: Neural network model for Raspberry Pi (TensorFlow Lite format)
+- **`models/pushback_lite.*`**: Legacy 2025-26 Push Back model, kept only for reference - not used by the code anymore
+- **`assets/`**: Training images showing the visual range the (legacy) model was trained on
 
 ## Key Concepts
 
@@ -234,11 +236,18 @@ Offsets can be configured:
 
 ### Detection Classes
 
-The system detects two object classes (defined in `labels.txt`):
-- **BallBlue** (Class ID: 0)
-- **BallRed** (Class ID: 1)
+The system detects the following object classes (defined in `labels.txt`, in this order):
+- **blue** (Class ID: 0)
+- **blue_yellow** (Class ID: 1)
+- **cup** (Class ID: 2)
+- **red** (Class ID: 3)
+- **red_blue** (Class ID: 4)
+- **red_yellow** (Class ID: 5)
+- **yellow** (Class ID: 6)
+- **yellow_yellow** (Class ID: 7)
 
-The AI model was trained on synthetic renderings at various lighting conditions to perform well across different environments. Training images are included in the `assets/` directory for reference.
+> [!WARNING]
+> This order must match the `names:` list in the trained model's `data.yaml` (from the Roboflow export) exactly - the class index is what gets sent to the V5 Brain as `classID`. If you add, remove, or reorder classes in Roboflow, update `labels.txt` (and the `OBJECT` enum in `V5Example/ai_demo/include/ai_functions.h`) to match.
 
 ### Model Performance
 
@@ -270,14 +279,14 @@ If you built the system from source and want to set up the systemd service for a
 
 This will:
 - Create a systemd service file at `/etc/systemd/system/vexai.service`
-- Configure the service to run `pushback.py` on boot
+- Configure the service to run `override.py` on boot
 - Start the service immediately
 - Enable auto-start on future boots
 
 The `run.sh` script handles:
 - Starting the web dashboard server (serves the React app)
 - Setting required environment variables (CUDA paths, Python paths)
-- Running `pushback.py` with proper configuration
+- Running `override.py` with proper configuration
 
 ## Troubleshooting
 
@@ -310,17 +319,17 @@ The `run.sh` script handles:
 - Check web dashboard is built (see [JetsonWebDashboard README](../JetsonWebDashboard/README.md))
 
 ### Model Engine Issues
-- **Jetson**: If you see "Using an engine plan file across different models" warning, delete `models/pushback_lite.trt` to regenerate
+- **Jetson**: If you see "Using an engine plan file across different models" warning, delete `models/override_lite.trt` to regenerate
 - **Raspberry Pi**: Ensure Coral Edge TPU is properly connected (USB or M.2)
 
 ## File Structure
 
 ```
 JetsonExample/
-├── pushback.py              # Main entry point and application orchestration
+├── override.py              # Main entry point and application orchestration
 ├── model.py                 # AI model interface and inference
 ├── model_backend.py         # Platform-specific inference backends (CUDA/Coral)
-├── data_processing.py       # YOLOv3 preprocessing and post-processing
+├── data_processing.py       # YOLOv11 preprocessing and post-processing
 ├── common.py                # NVIDIA utility functions for TensorRT
 ├── V5Comm.py                # Serial communication with V5 Brain
 ├── V5Position.py            # GPS sensor integration
@@ -329,10 +338,11 @@ JetsonExample/
 ├── filter.py                # Position filtering utilities
 ├── labels.txt               # Object class labels
 ├── models/
-│   ├── pushback_lite.onnx   # Neural network model (Jetson)
-│   └── pushback_lite.tflite # Neural network model (Raspberry Pi)
+│   ├── override_lite.onnx   # Neural network model (Jetson) - add after training
+│   ├── override_lite.tflite # Neural network model (Raspberry Pi) - add after training
+│   └── pushback_lite.*      # Legacy 2025-26 Push Back model (unused, kept for reference)
 ├── assets/
-│   └── training_img_*.jpg   # Training images for reference
+│   └── training_img_*.jpg   # Training images for reference (legacy Push Back model)
 └── Scripts/
     ├── service.sh           # Systemd service installation
     ├── run.sh               # Service startup script
@@ -351,6 +361,7 @@ After understanding how the JetsonExample system works:
 
 ## Additional Resources
 
-- [YOLOv3 Paper](https://arxiv.org/pdf/1804.02767.pdf) - Neural network architecture details
+- [Ultralytics YOLOv11 Docs](https://docs.ultralytics.com/models/yolo11/) - Neural network architecture and export details
+- [Roboflow](https://roboflow.com/) - Dataset labeling and model training platform used for the Override detection model
 - [Intel RealSense SDK Documentation](https://dev.intelrealsense.com/) - Camera API reference
 - [VEX AI Competition Documentation](https://kb.vex.com/hc/en-us/articles/360049619171-Coding-the-VEX-AI-Robot) - VEX AI system overview

@@ -13,9 +13,18 @@
 #include <vex.h>
 #include <robot-config.h>
 
+// Must stay in the same order as JetsonExample/labels.txt (and the Roboflow
+// dataset's data.yaml `names:` list) - the enum value IS the classID received
+// over the serial link from the Jetson/Raspberry Pi.
 enum OBJECT {
-    BallBlue,
-    BallRed
+    Blue,
+    BlueYellow,
+    Cup,
+    Red,
+    RedBlue,
+    RedYellow,
+    Yellow,
+    YellowYellow
 };
 
 using namespace vex;

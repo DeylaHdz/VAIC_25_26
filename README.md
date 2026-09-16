@@ -4,11 +4,13 @@ The VEX AI Competition (VAIC) System is a complete computer vision and robotics 
 
 ## Overview
 
-This repository contains the complete software stack for the 2025-26 VEX AI Competition (PushBack). The system processes live camera feeds to detect colored balls (red and blue) in real-time, maps their 3D positions on the competition field, and communicates detection data to the VEX V5 Brain via serial communication. The V5 Brain uses this information to autonomously navigate and interact with detected objects.
+This repository contains the software stack for the 2026-27 VEX AI Competition (Override), adapted from VEX's 2025-26 Push Back example. The system processes live camera feeds to detect Override game elements (Cups and the four Pin color combinations) in real-time, maps their 3D positions on the competition field, and communicates detection data to the VEX V5 Brain via serial communication. The V5 Brain uses this information to autonomously navigate and interact with detected objects.
+
+> **Status**: The bundled detection model (`JetsonExample/models/pushback_lite.*`) is still the legacy 2025-26 Push Back model and only detects balls - it does **not** detect Override elements. A YOLOv11 model trained on an Override dataset (via Roboflow) is in progress; see [JetsonExample/README.md](./JetsonExample/README.md) for how to drop in the retrained `override_lite.onnx`/`.tflite` once exported.
 
 ### Key Features
 
-- **Real-time Object Detection**: Uses YOLOv3-based neural networks to detect VEX PushBack game objects (red and blue balls)
+- **Real-time Object Detection**: Uses a YOLOv11 neural network to detect VEX Override game elements (Cups and color-coded Pins)
 - **3D Spatial Mapping**: Converts 2D camera detections into 3D field coordinates using depth camera data
 - **Dual Platform Support**: Works on both NVIDIA Jetson Nano (CUDA acceleration) and Raspberry Pi 5 with Coral Edge TPU
 - **Web Dashboard**: React-based web interface for real-time monitoring, camera views, detection visualization, and system configuration
@@ -40,10 +42,10 @@ This repository contains the complete software stack for the 2025-26 VEX AI Comp
 
 1. **Camera Capture**: The Intel RealSense D435 camera captures synchronized color (RGB) and depth frames at 640x480 resolution, 30 FPS
 2. **Image Processing**: RGB frames are color-corrected (HSV adjustment) to improve detection accuracy under various lighting conditions
-3. **AI Inference**: Pre-processed images are fed into a YOLOv3-based neural network (ONNX/TFLite format) running on:
+3. **AI Inference**: Pre-processed images are fed into a YOLOv11-based neural network (ONNX/TFLite format) running on:
    - **Jetson Nano**: CUDA-accelerated TensorRT backend
    - **Raspberry Pi 5**: Google Coral Edge TPU backend
-4. **Detection Processing**: Bounding boxes are extracted for detected objects (red/blue balls) with confidence scores
+4. **Detection Processing**: Bounding boxes are extracted for detected objects (Cups and Pins) with confidence scores
 5. **3D Mapping**: Depth data from RealSense camera is used to project 2D detections into 3D field coordinates (meters from field center)
 6. **Position Fusion**: Robot position from V5 GPS sensor is combined with camera offset and GPS offset to calculate absolute field positions
 7. **Serial Communication**: Detection data (including robot position and all detected objects) is packaged into a binary protocol and sent to V5 Brain via USB serial
@@ -55,14 +57,14 @@ This repository contains the complete software stack for the 2025-26 VEX AI Comp
 
 The core Python application that runs on the Jetson Nano or Raspberry Pi 5. This component handles:
 - **Camera Management** (`Camera` class): Initializes and manages Intel RealSense pipeline
-- **AI Inference** (`Model` class): Loads and runs YOLOv3 neural network inference
+- **AI Inference** (`Model` class): Loads and runs YOLOv11 neural network inference
 - **Image Processing** (`Processing` class): Color correction, depth alignment, and 3D projection
 - **Serial Communication** (`V5Comm.py`): Binary protocol implementation for V5 Brain communication
 - **GPS Integration** (`V5Position.py`): V5 GPS sensor serial communication and position tracking
 - **3D Mapping** (`V5MapPosition.py`): Projects 2D detections to 3D field coordinates
 - **Web Server** (`V5Web.py`): HTTP/WebSocket server for the web dashboard
 
-**Main Entry Point**: `pushback.py` - Coordinates all components and runs the main processing loop
+**Main Entry Point**: `override.py` - Coordinates all components and runs the main processing loop
 
 ### [JetsonImages](./JetsonImages/README.md)
 
@@ -89,7 +91,7 @@ C++ example project for the VEX V5 Brain demonstrating:
 - **Robot-to-Robot Link** (`ai_robot_link.cpp`): Multi-robot coordination via VEXLink
 - **Dashboard Display** (`dashboard.cpp`): Status information display on Brain screen
 
-**Example Behavior**: Searches for blue balls, drives to them, intakes them, then scores in the nearest goal end.
+**Example Behavior**: Searches for cups, drives to them, intakes them, then scores in the nearest corner Alliance Goal.
 
 ## Prerequisites
 
@@ -147,9 +149,15 @@ Each directory contains detailed README files with specific setup instructions, 
 
 ## Detection Classes
 
-The system detects the following objects (defined in `JetsonExample/labels.txt`):
-- `BallBlue` (Class ID: 0)
-- `BallRed` (Class ID: 1)
+The system detects the following objects (defined in `JetsonExample/labels.txt`, order must match the trained model's class order):
+- `blue` (Class ID: 0)
+- `blue_yellow` (Class ID: 1)
+- `cup` (Class ID: 2)
+- `red` (Class ID: 3)
+- `red_blue` (Class ID: 4)
+- `red_yellow` (Class ID: 5)
+- `yellow` (Class ID: 6)
+- `yellow_yellow` (Class ID: 7)
 
 ## Data Communication Protocol
 
@@ -179,10 +187,11 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 ## Additional Resources
 
 - [VEX AI Competition Documentation](https://kb.vex.com/hc/en-us/articles/360049619171-Coding-the-VEX-AI-Robot)
-- [YOLOv3 Paper](https://arxiv.org/pdf/1804.02767.pdf)
+- [Ultralytics YOLOv11 Docs](https://docs.ultralytics.com/models/yolo11/)
+- [Roboflow](https://roboflow.com/)
 - [Intel RealSense Documentation](https://dev.intelrealsense.com/)
 - [NVIDIA Jetson Developer Center](https://developer.nvidia.com/embedded/jetson-nano-developer-kit)
 
 ## Contributing
 
-This is the official VEX AI Competition system for 2025-26. For support and questions, refer to the [VEX AI Competition documentation](https://kb.vex.com/hc/en-us/sections/4409408713623-VEX-AI-Competition).
+This is adapted from VEX's official VEX AI Competition example for the 2026-27 (Override) season. For support and questions, refer to the [VEX AI Competition documentation](https://kb.vex.com/hc/en-us/sections/4409408713623-VEX-AI-Competition).

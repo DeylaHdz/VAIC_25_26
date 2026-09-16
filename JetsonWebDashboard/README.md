@@ -306,7 +306,7 @@ The dashboard displays real-time statistics:
 **Issue**: Dashboard loads but shows "Disconnected" or no data
 
 **Solutions:**
-- Verify `pushback.py` is running (WebSocket server is part of the vision system)
+- Verify `override.py` is running (WebSocket server is part of the vision system)
 - Check WebSocket port 3030 is accessible
 - Verify WebSocket server is listening: `netstat -tuln | grep 3030`
 - Check system logs: `sudo journalctl -u vexai -n 50`
