@@ -6,7 +6,7 @@ The VEX AI Competition (VAIC) System is a complete computer vision and robotics 
 
 This repository contains the software stack for the 2026-27 VEX AI Competition (Override), adapted from VEX's 2025-26 Push Back example. The system processes live camera feeds to detect Override game elements (Cups and the four Pin color combinations) in real-time, maps their 3D positions on the competition field, and communicates detection data to the VEX V5 Brain via serial communication. The V5 Brain uses this information to autonomously navigate and interact with detected objects.
 
-> **Status**: The bundled detection model (`JetsonExample/models/pushback_lite.*`) is still the legacy 2025-26 Push Back model and only detects balls - it does **not** detect Override elements. A YOLOv11 model trained on an Override dataset (via Roboflow) is in progress; see [JetsonExample/README.md](./JetsonExample/README.md) for how to drop in the retrained `override_lite.onnx`/`.tflite` once exported.
+> **Status**: `JetsonExample/models/override_lite.onnx` is a YOLOv11n model trained locally on a Roboflow-labeled Override dataset (101 images; mAP50 0.932, precision 0.956, recall 0.917 on the validation split). It covers the Jetson/CUDA path. No Coral/TFLite export (`override_lite.tflite`) exists yet - see [JetsonExample/README.md](./JetsonExample/README.md) for details, and note the dataset is small, so expect to retrain as more images are collected.
 
 ### Key Features
 

@@ -110,7 +110,7 @@ The entry point of the system. Contains four main classes:
 - **Input Resolution**: 640x640 pixels
 - **Backend Selection**: Automatically detects and uses CUDA (Jetson) or Coral Edge TPU (Raspberry Pi)
 - **Output**: Bounding boxes, class IDs, and confidence scores for detected objects
-- **Status**: `models/pushback_lite.*` (bundled) is the legacy 2025-26 Push Back model and must be replaced with an Override-trained `override_lite.onnx`/`.tflite` - see [Detection Classes](#detection-classes) below
+- **Status**: `models/override_lite.onnx` is trained on the 8 Override classes (mAP50 0.932 on a small 101-image dataset) and verified end-to-end against this pipeline. `models/override_lite.tflite` (Coral/Raspberry Pi) has not been produced yet - see [Detection Classes](#detection-classes) below
 
 #### `CUDABackend` and `CoralBackend` Classes (`model_backend.py`)
 - **Purpose**: Platform-specific AI inference backends
@@ -193,8 +193,8 @@ Provides HTTP/WebSocket server for the web dashboard.
 - **`filter.py`**: `LiveFilter` class for smoothing position data (moving average filter)
 - **`labels.txt`**: Object class labels (`blue`, `blue_yellow`, `cup`, `red`, `red_blue`, `red_yellow`, `yellow`, `yellow_yellow` - must match the trained model's class order exactly)
 - **`common.py`**: NVIDIA-provided utility functions for TensorRT/CUDA operations
-- **`models/override_lite.onnx`**: Neural network model for Jetson (ONNX format) - drop your Roboflow YOLOv11 export here
-- **`models/override_lite.tflite`**: Neural network model for Raspberry Pi (TensorFlow Lite format)
+- **`models/override_lite.onnx`**: Trained YOLOv11n model for Jetson (ONNX format), 8 Override classes
+- **`models/override_lite.tflite`**: Neural network model for Raspberry Pi (TensorFlow Lite format) - not yet produced
 - **`models/pushback_lite.*`**: Legacy 2025-26 Push Back model, kept only for reference - not used by the code anymore
 - **`assets/`**: Training images showing the visual range the (legacy) model was trained on
 
@@ -338,8 +338,8 @@ JetsonExample/
 ├── filter.py                # Position filtering utilities
 ├── labels.txt               # Object class labels
 ├── models/
-│   ├── override_lite.onnx   # Neural network model (Jetson) - add after training
-│   ├── override_lite.tflite # Neural network model (Raspberry Pi) - add after training
+│   ├── override_lite.onnx   # Trained YOLOv11n model (Jetson)
+│   ├── override_lite.tflite # Neural network model (Raspberry Pi) - not yet produced
 │   └── pushback_lite.*      # Legacy 2025-26 Push Back model (unused, kept for reference)
 ├── assets/
 │   └── training_img_*.jpg   # Training images for reference (legacy Push Back model)

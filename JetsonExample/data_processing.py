@@ -31,12 +31,10 @@ LABEL_FILE_PATH = os.path.join(
 )
 ALL_CATEGORIES = load_label_categories(LABEL_FILE_PATH)
 
-# 2026-27 Override classes, in the same order as the Roboflow dataset export
-# (verify against the trained model's data.yaml `names:` list - the index here
-# IS the classID sent to the V5 Brain, so a mismatched order silently misclassifies).
-# The bundled models/pushback_lite.* weights are the legacy 2025-26 Push Back
-# model (BallBlue, BallRed) and do NOT match this class count - they must be
-# replaced with the YOLOv11 model retrained on these labels before inference will work.
+# 2026-27 Override classes, in the same order as the Roboflow dataset export /
+# models/override_lite.onnx's training data.yaml. The index here IS the classID
+# sent to the V5 Brain, so a mismatched order silently misclassifies - if you
+# retrain on a different/reordered class list, update this file to match.
 CATEGORY_NUM = len(ALL_CATEGORIES)
 
 

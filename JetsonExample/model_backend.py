@@ -82,7 +82,7 @@ class CUDABackend(ModelBackend):
 
     def __init__(self):
         current_folder_path = os.path.dirname(os.path.abspath(__file__))
-        # Drop your Roboflow-exported YOLOv11 ONNX weights in models/override_lite.onnx.
+        # models/override_lite.onnx is a YOLOv11n model trained on the 8 Override classes.
         # models/pushback_lite.onnx (if still present) is the legacy 2025-26 Push Back model
         # (2 classes) and is NOT compatible with labels.txt - do not point this at it.
         onnx_file_path = os.path.join(current_folder_path, "models/override_lite.onnx")  # If you change the onnx file to your own model, adjust the file name here
