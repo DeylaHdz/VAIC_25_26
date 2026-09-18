@@ -47,8 +47,7 @@ class CUDABackend(ModelBackend):
                     trt.OnnxParser(network, TRT_LOGGER) as parser, \
                     trt.Runtime(TRT_LOGGER) as runtime:
 
-                config.max_workspace_size = 1 << 28  # Set maximum workspace size to 256MiB
-                builder.max_batch_size = 1
+                config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 1 << 28)  # 256MiB workspace
 
                 # Check if ONNX file exists
                 if not os.path.exists(onnx_file_path):
@@ -63,8 +62,9 @@ class CUDABackend(ModelBackend):
                             print(parser.get_error(error))
                         return None
 
-                # Set input shape for the network
-                network.get_input(0).shape = [1, 320, 320, 3]
+                # Input shape (1, 3, 640, 640) NCHW comes from the ONNX file itself -
+                # no need to override it here (the override_lite.onnx export has a fixed
+                # shape, unlike the old 320x320 NHWC pushback model this code used to target).
 
                 # Build and serialize the network, then create and return the engine
                 plan = builder.build_serialized_network(network, config)
@@ -95,12 +95,12 @@ class CUDABackend(ModelBackend):
         self.context = self.engine.create_execution_context()
 
         # Allocate buffers for input and output
-        self.inputs, self.outputs, self.bindings, self.stream = cuda_common.allocate_buffers(self.engine)
+        self.inputs, self.outputs, self.bindings, self.stream, self.names = cuda_common.allocate_buffers(self.engine)
 
     def inference(self, image):
         self.inputs[0].host = image
         trt_outputs = cuda_common.do_inference_v2(self.context, bindings=self.bindings, inputs=self.inputs,
-                                             outputs=self.outputs, stream=self.stream)
+                                             outputs=self.outputs, stream=self.stream, names=self.names)
         
         return trt_outputs
     

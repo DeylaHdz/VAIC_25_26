@@ -8,7 +8,6 @@ import { v4 as uuidv4 } from "uuid";
 import { config } from "../../util/config";
 import { PhotoCamera } from "@mui/icons-material";
 import Konva from "konva";
-import { Jimp } from "jimp";
 
 interface CameraProps {
   img: Image;
@@ -53,16 +52,21 @@ const Camera = ({ img, detections }: CameraProps) => {
     }
   }, [detections]);
 
-  // To save image to disk, Kanva stage must be coverted to .png and overlaid on the original image
-  const cameraButtonClicked = async () => {
-     if (canvasRef.current && ref.current) {
-      const canvasCopy: Konva.Stage = canvasRef.current.clone();
-      const cameraCopy = ref.current.src;
-      const canvasImage = await Jimp.read(canvasCopy.toDataURL({mimeType: "image/png"}));
-      const cameraImage = await Jimp.read(cameraCopy);
-      cameraImage.resize({w: canvasImage.width, h: canvasImage.height})
-      cameraImage.composite(canvasImage);
-      const base64 = await cameraImage.getBase64("image/png");
+  // To save image to disk, the Konva stage (detection overlay) is drawn on top of the
+  // camera image using a plain <canvas>, avoiding any Node-oriented image library.
+  const cameraButtonClicked = () => {
+    if (canvasRef.current && ref.current) {
+      const stageCanvas = canvasRef.current.toCanvas();
+      const width = stageCanvas.width;
+      const height = stageCanvas.height;
+
+      const finalCanvas = document.createElement("canvas");
+      finalCanvas.width = width;
+      finalCanvas.height = height;
+      const ctx = finalCanvas.getContext("2d");
+      ctx.drawImage(ref.current, 0, 0, width, height);
+      ctx.drawImage(stageCanvas, 0, 0, width, height);
+      const base64 = finalCanvas.toDataURL("image/png");
 
       const currentDate = new Date().toISOString();
       const link = document.createElement("a");
@@ -72,7 +76,7 @@ const Camera = ({ img, detections }: CameraProps) => {
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
-     }
+    }
   }
 
   return (

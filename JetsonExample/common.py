@@ -52,25 +52,31 @@ class HostDeviceMem(object):
         return self.__str__()
 
 # Allocates all buffers required for an engine, i.e. host/device inputs/outputs.
+# TensorRT 10 dropped the index-based bindings API (get_binding_shape, max_batch_size,
+# binding_is_input) in favor of a name-based tensor I/O API - also returns the tensor
+# names so do_inference_v2 can bind device addresses by name via set_tensor_address.
 def allocate_buffers(engine):
     inputs = []
     outputs = []
     bindings = []
+    names = []
     stream = cuda.Stream()
-    for binding in engine:
-        size = trt.volume(engine.get_binding_shape(binding)) * engine.max_batch_size
-        dtype = trt.nptype(engine.get_binding_dtype(binding))
+    for i in range(engine.num_io_tensors):
+        name = engine.get_tensor_name(i)
+        size = trt.volume(engine.get_tensor_shape(name))
+        dtype = trt.nptype(engine.get_tensor_dtype(name))
         # Allocate host and device buffers
         host_mem = cuda.pagelocked_empty(size, dtype)
         device_mem = cuda.mem_alloc(host_mem.nbytes)
         # Append the device buffer to device bindings.
         bindings.append(int(device_mem))
+        names.append(name)
         # Append to the appropriate list.
-        if engine.binding_is_input(binding):
+        if engine.get_tensor_mode(name) == trt.TensorIOMode.INPUT:
             inputs.append(HostDeviceMem(host_mem, device_mem))
         else:
             outputs.append(HostDeviceMem(host_mem, device_mem))
-    return inputs, outputs, bindings, stream
+    return inputs, outputs, bindings, stream, names
 
 # This function is generalized for multiple inputs/outputs.
 # inputs and outputs are expected to be lists of HostDeviceMem objects.
@@ -88,11 +94,14 @@ def do_inference(context, bindings, inputs, outputs, stream, batch_size=1):
 
 # This function is generalized for multiple inputs/outputs for full dimension networks.
 # inputs and outputs are expected to be lists of HostDeviceMem objects.
-def do_inference_v2(context, bindings, inputs, outputs, stream):
+def do_inference_v2(context, bindings, inputs, outputs, stream, names):
     # Transfer input data to the GPU.
     [cuda.memcpy_htod_async(inp.device, inp.host, stream) for inp in inputs]
-    # Run inference.
-    context.execute_async_v2(bindings=bindings, stream_handle=stream.handle)
+    # execute_async_v2's bindings list was removed in TensorRT 10 - addresses are now
+    # set per named tensor, then run with execute_async_v3.
+    for name, address in zip(names, bindings):
+        context.set_tensor_address(name, address)
+    context.execute_async_v3(stream_handle=stream.handle)
     # Transfer predictions back from the GPU.
     [cuda.memcpy_dtoh_async(out.host, out.device, stream) for out in outputs]
     # Synchronize the stream

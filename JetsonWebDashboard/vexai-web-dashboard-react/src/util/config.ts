@@ -5,7 +5,10 @@ import { images } from "./images";
  * General configuration for the application
  */
 export const config = {
-  socketIP: "10.42.0.1",
+  // Use whatever host the browser loaded this page from, so the dashboard connects
+  // correctly whether it's opened on the Jetson itself (localhost) or from another
+  // device on the network (the Jetson's LAN IP) - no IP needs to be hardcoded.
+  socketIP: window.location.hostname,
   socketPort: "3030",
 
   /**
